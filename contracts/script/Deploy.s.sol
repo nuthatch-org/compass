@@ -22,7 +22,7 @@ import {MCPDataService} from "../src/MCPDataService.sol";
 contract Deploy is Script {
     // Arbitrum One: 0x454bB3cb427B21e1c052A080e21A57753cd6969a (from graph-network-arbitrum)
     // Arbitrum Sepolia: check The Graph's official deployment manifest.
-    address constant CONTROLLER_MAINNET    = 0x454bB3cb427B21e1c052A080e21A57753cd6969a;
+    address constant CONTROLLER_MAINNET    = 0x454bb3cb427B21E1C052A080e21a57753cD6969A;
     address constant TALLY_COLLECTOR_MAINNET = 0x8f69F5C07477Ac46FBc491B1E6D91E2bb0111A9e;
 
     function run() external {

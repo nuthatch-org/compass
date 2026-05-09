@@ -1,0 +1,103 @@
+# Logs
+yarn-debug.log*
+yarn-error.log*
+node.log
+
+# Core dumps
+core
+core.*
+
+# Dependency directories
+node_modules/
+.pnpm-store/
+
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Hardhat artifacts
+artifacts/
+cache/
+cached/
+cache
+
+# ESLint cache
+.eslintcache
+packages/*/.eslintcache
+
+# Build artifacts
+dist/
+dist-v5/
+build/
+typechain/
+typechain-types/
+types/
+types-v5/
+wagmi/
+types/
+deployments/hardhat/
+*.js.map
+*.d.ts.map
+
+# TypeScript incremental compilation cache
+**/tsconfig.tsbuildinfo
+
+# Ignore solc bin output
+bin/
+
+# PNPM store (project-local)
+.pnpm-store/
+
+# Others
+.env
+.DS_Store
+.vscode
+
+# Coverage and other reports
+coverage/
+reports/
+coverage.json
+lcov.info
+hardhat-dependency-compiler/
+
+# Local test files
+localNetwork.json
+arbitrum-addresses-local.json
+addresses-fork.json
+addresses-hardhat.json
+addresses-local*.json
+
+# Keys
+.keystore
+
+# Forge artifacts
+cache_forge
+forge-artifacts/
+out/
+
+# Graph client
+.graphclient
+
+# Tx builder and logger
+tx-*.log
+tx-builder-*.json
+!tx-builder-template.json
+
+# Hardhat Ignition
+**/ignition/deployments/*-localhost/
+**/ignition/deployments/*-hardhat/
+**/ignition/deployments/*-31337/
+**/ignition/deployments/*-1337/
+**/chain-31337/
+**/chain-1377/
+**/horizon-localhost/
+**/horizon-hardhat/
+**/subgraph-service-localhost/
+**/subgraph-service-hardhat/
+**/horizon-localNetwork/
+**/subgraph-service-localNetwork/
+!**/ignition/**/artifacts/

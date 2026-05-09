@@ -1,0 +1,36 @@
+name: Publish package to NPM
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to publish'
+        required: true
+        type: choice
+        options:
+          - contracts
+          - sdk
+      tag:
+        description: 'Tag to publish'
+        required: true
+        type: string
+        default: latest
+
+jobs:
+  publish:
+    name: Publish package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Set up environment
+        uses: ./.github/actions/setup
+      - name: Set npm token for publishing
+        run: pnpm config set //registry.npmjs.org/:_authToken ${{ secrets.GRAPHPROTOCOL_NPM_TOKEN }}
+      - name: Publish 🚀
+        shell: bash
+        run: |
+          pushd packages/${{ inputs.package }}
+          pnpm publish --tag ${{ inputs.tag }} --access public --no-git-checks

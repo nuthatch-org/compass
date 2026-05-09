@@ -11,7 +11,6 @@ import {
 } from "@graphprotocol/horizon/data-service/extensions/DataServicePausableUpgradeable.sol";
 import {IGraphPayments} from "@graphprotocol/horizon/interfaces/IGraphPayments.sol";
 import {IGraphTallyCollector} from "@graphprotocol/horizon/interfaces/IGraphTallyCollector.sol";
-import {IHorizonStaking} from "@graphprotocol/horizon/interfaces/IHorizonStaking.sol";
 
 import {IMCPDataService} from "./interfaces/IMCPDataService.sol";
 
@@ -74,7 +73,7 @@ contract MCPDataService is
     uint64 public minThawingPeriod;
 
     /// @dev Reserved storage slots for future upgrades.
-    uint256[50] private __gap;
+    uint256[50] private _gap;
 
     // -------------------------------------------------------------------------
     // Constructor
@@ -153,7 +152,6 @@ contract MCPDataService is
     /// @dev All active subgraph registrations must be removed first.
     function deregister(address serviceProvider, bytes calldata)
         external
-        override
         onlyAuthorizedForProvision(serviceProvider)
     {
         if (!registeredProviders[serviceProvider]) revert ProviderNotRegistered(serviceProvider);
