@@ -11,6 +11,8 @@ contracts/out/
 contracts/cache/
 contracts/broadcast/
 contracts/.env
+# Lib changes after initial commit — update intentionally, don't auto-track
+contracts/lib/**/*.lock
 
 # IDE
 .idea/

@@ -7,4 +7,7 @@ description = "x402 payment facade for Compass — HTTP 402 responses and X-Paym
 
 [dependencies]
 compass-core.workspace = true
+serde.workspace = true
 serde_json.workspace = true
+reqwest.workspace = true
+anyhow.workspace = true

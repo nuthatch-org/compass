@@ -15,6 +15,13 @@ eip712_verifying_contract = "0x8f69F5C07477Ac46FBc491B1E6D91E2bb0111A9e"
 # Default price per MCP tool call in GRT wei (0.00001 GRT ≈ $0.000001 at $0.10/GRT).
 price_per_query_grt_wei = 10000000000000
 
+# Optional: enable x402 USDC-on-Base as a secondary payment rail.
+# Remove this section to accept TAP receipts only.
+[x402]
+# Base mainnet (or testnet) JSON-RPC URL — used to verify on-chain USDC transfers.
+# Get a free endpoint from Alchemy, Infura, or Coinbase (Base RPC).
+base_rpc_url = "https://mainnet.base.org"
+
 [graph_node]
 # When running in docker on the same VPS as the StakeSquid indexer stack,
 # use the graph-node container name (reachable via the shared docker network).

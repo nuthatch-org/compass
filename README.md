@@ -7,15 +7,17 @@ Compass turns every subgraph an indexer serves into a discoverable, pay-per-call
 ```
 Agent (Claude / Cursor / OpenAI Agents)
     │
-    │  POST /   {"method": "tools/call", "params": {"name": "ens_mainnet", "arguments": {"query": "..."}}}
-    │  tap-receipt: {"receipt": {...}, "signature": "0x..."}
+    │  POST /   {"method": "tools/call", "params": {"name": "ens_mainnet__domains", "arguments": {"first": 5, "_fields": "id name labelName"}}}
+    │  tap-receipt: {"receipt": {...}, "signature": "0x..."}          ← GRT (primary)
+    │  OR x-payment: {"scheme":"exact","network":"base","payload":{"txHash":"0x..."}}  ← USDC (secondary)
     ▼
 compass-gateway (this repo — Rust, axum)
-    │  validate TAP receipt (EIP-712, compass-tap)
-    │  OR: return HTTP 402 with x402 payment spec (compass-x402)
+    │  validate TAP receipt (EIP-712) OR verify USDC transfer on Base
+    │  return HTTP 402 + x402 payment spec if neither header present
+    │  introspect __schema at startup → typed per-entity MCP tools
     ▼
 graph-node (local, same indexer host)
-    │  POST /subgraphs/id/{deploymentId}
+    │  POST /subgraphs/id/{deploymentId}  { query: "{ domains(first: 5) { id name labelName } }" }
     ▼
 Subgraph data  →  back to agent as MCP tool result
 ```
@@ -26,16 +28,16 @@ Indexers stake GRT into `MCPDataService.sol` on Arbitrum One and collect query f
 
 ## Status
 
-> **Week 1 — scaffold complete.** The Rust workspace compiles, EIP-712 receipt validation is tested, and `MCPDataService.sol` is written. Contract deployment and end-to-end MCP demo coming in week 3.
+> **Weeks 1–6 complete.** Gateway is fully functional: TAP receipt validation, x402 USDC-on-Base payment verification, and per-entity MCP tools derived from `__schema` introspection. Next: `compass-cli` and mainnet launch.
 
-| Week | Milestone |
-|------|-----------|
-| 1–2  | `MCPDataService.sol` Foundry tests + Arbitrum Sepolia deploy |
-| 3–4  | `tools/list` + `tools/call` working end-to-end; Claude Desktop demo |
-| 5    | x402 facade + Coinbase Bazaar auto-listing |
-| 6    | Auto-derived per-entity MCP tools from `__schema` introspection |
-| 7    | `compass-cli` (`compass run`, `compass register`) |
-| 8    | Launch: GRC-007 forum post, Bazaar listing, blog post |
+| Week | Milestone | Status |
+|------|-----------|--------|
+| 1–2  | `MCPDataService.sol` Foundry tests + Arbitrum Sepolia deploy | ✅ |
+| 3–4  | `tools/list` + `tools/call` working end-to-end; TAP receipt validation | ✅ |
+| 5    | x402 USDC-on-Base payment validation; Coinbase Bazaar auto-listing | ✅ |
+| 6    | Auto-derived per-entity MCP tools from `__schema` introspection | ✅ |
+| 7    | `compass-cli` (`compass run`, `compass register`) | 🔜 |
+| 8    | Launch: GRC-007 forum post, Bazaar listing, blog post | 🔜 |
 
 ---
 
@@ -45,18 +47,35 @@ Indexers stake GRT into `MCPDataService.sol` on Arbitrum One and collect query f
 
 Compass exposes a standard [MCP Streamable HTTP](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http) endpoint. Point any MCP-compatible client at it:
 
-```json
-// tools/list — discover available subgraphs
+```jsonc
+// tools/list — discover available tools (one per root query field per subgraph)
 POST https://compass.your-indexer.example.com/
 {"jsonrpc": "2.0", "id": 1, "method": "tools/list"}
+// → returns tools like "ens_mainnet__domains", "ens_mainnet__registrations", etc.
+// → each tool has typed args derived from the subgraph's GraphQL schema
 
-// tools/call — query a subgraph (TAP receipt required)
+// tools/call — typed args, auto-built query (TAP receipt or x402 X-Payment required)
 POST https://compass.your-indexer.example.com/
 tap-receipt: {"receipt": {"data_service": "0x...", "service_provider": "0x...", "timestamp_ns": 1234567890, "nonce": 1, "value": 10000000000000, "metadata": "0x"}, "signature": "0x..."}
-{"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "ens_mainnet", "arguments": {"query": "{ domains(first: 5) { name labelName } }"}}}
+{"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {
+  "name": "ens_mainnet__domains",
+  "arguments": {"first": 5, "orderBy": "createdAt", "_fields": "id name labelName createdAt"}
+}}
+
+// tools/call — raw GraphQL override via _query (for complex queries)
+tap-receipt: {...}
+{"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {
+  "name": "ens_mainnet__domains",
+  "arguments": {"_query": "{ domains(first: 5, where: {name_contains: \"vitalik\"}) { name resolver { addr { id } } } }"}
+}}
 ```
 
-No receipt? The server returns HTTP 402 with an [x402](https://x402.org) payment spec so the agent knows exactly how to pay.
+No payment header? The server returns HTTP 402 with an [x402](https://x402.org) payment spec. Agents can pay in USDC on Base by including an `x-payment` header with the transaction hash of their on-chain transfer.
+
+#### Tool naming convention
+
+- **Introspected tools**: `{subgraph_name}__{query_field}` — e.g. `ens_mainnet__domains`, `uniswap_v3__pools`
+- **Generic fallback** (if graph-node is unreachable at startup): `{subgraph_name}` — accepts raw `query` arg
 
 ### For indexers
 
@@ -90,6 +109,11 @@ data_service_address = "0xMCPDATASERVICE_PROXY_ADDRESS"  # after deploy
 
 [graph_node]
 url = "http://graph-node:8000"   # container name if running in same docker stack
+
+# Optional: accept USDC-on-Base payments via x402 in addition to TAP receipts.
+# Remove to accept TAP receipts only.
+[x402]
+base_rpc_url = "https://mainnet.base.org"
 
 [[subgraphs]]
 deployment_id = "QmYourDeploymentCID..."
@@ -168,29 +192,38 @@ RUST_LOG=compass_gateway=debug cargo run --bin compass-gateway
 | Crate | Purpose |
 |-------|---------|
 | `compass-core` | Config, shared types (`McpTool`, `PaymentSpec`), errors |
-| `compass-tap` | TAP v2 EIP-712 receipt validation (ported from [dispatch-tap](https://github.com/cargopete/drpc-service)) |
+| `compass-tap` | TAP v2 EIP-712 receipt validation |
 | `compass-mcp` | MCP Streamable HTTP JSON-RPC 2.0 protocol types |
-| `compass-x402` | HTTP 402 builder; x402 payment spec for agent-discovery path |
-| `compass-schema` | GraphQL `__schema` → MCP tool schema derivation (week 6) |
-| `compass-gateway` | Main binary: axum server, TAP validation, graph-node forwarding |
+| `compass-x402` | HTTP 402 builder + `X-Payment` USDC-on-Base validation via Base JSON-RPC |
+| `compass-schema` | GraphQL `__schema` introspection → typed per-entity MCP tools + auto query builder |
+| `compass-gateway` | Main binary: axum server, dual-rail payment, graph-node forwarding |
 
 ---
 
 ## Payment flow
 
 ```
-Agent signs TAP receipt (GRT wei, EIP-712)
-    └── tap-receipt header on tools/call
-            └── compass-gateway validates signature + value + addresses
-                    └── forwards GraphQL to graph-node
-                            └── returns result
+Primary rail — TAP / GRT (gas-free batch settlement):
 
-Indexer accumulates receipts → submits RAV → MCPDataService.collect()
-    └── GraphTallyCollector → PaymentsEscrow → GraphPayments
-            └── GRT distributed: protocol tax / data service cut / delegator cut / indexer
+  Agent signs TAP receipt (GRT wei, EIP-712)
+      └── tap-receipt header on tools/call
+              └── compass-gateway validates: data_service, service_provider, value, EIP-712 sig
+                      └── forwards GraphQL to graph-node → returns result
+
+  Indexer accumulates receipts → submits RAV → MCPDataService.collect()
+      └── GraphTallyCollector → PaymentsEscrow → GraphPayments
+              └── GRT distributed: protocol tax / data service cut / delegator cut / indexer
+
+Secondary rail — x402 / USDC-on-Base (agent-discovery path):
+
+  Agent pays USDC on Base (any wallet / Coinbase Commerce)
+      └── x-payment: {"scheme":"exact","network":"base","payload":{"txHash":"0x..."}}
+              └── compass-gateway calls eth_getTransactionReceipt on Base RPC
+                      └── verifies USDC Transfer log: to == indexer, amount >= required
+                              └── forwards GraphQL to graph-node → returns result
 ```
 
-For agents without a TAP signer: compass-gateway returns HTTP 402 with an x402 USDC-on-Base payment spec. After the agent pays, Compass settles in GRT (week 5).
+No payment header? The gateway returns HTTP 402 with an x402 payment spec listing both rails. Agents that speak x402 (Coinbase AgentKit, etc.) handle payment automatically.
 
 ---
 

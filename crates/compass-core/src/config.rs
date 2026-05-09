@@ -8,7 +8,17 @@ pub struct Config {
     pub tap: TapConfig,
     pub graph_node: GraphNodeConfig,
     #[serde(default)]
+    pub x402: Option<X402Config>,
+    #[serde(default)]
     pub subgraphs: Vec<SubgraphConfig>,
+}
+
+/// Optional x402 configuration for USDC-on-Base payment validation.
+/// If absent, X-Payment headers are rejected and only TAP receipts are accepted.
+#[derive(Debug, Clone, Deserialize)]
+pub struct X402Config {
+    /// Base mainnet (or testnet) JSON-RPC URL used to verify on-chain USDC transfers.
+    pub base_rpc_url: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
