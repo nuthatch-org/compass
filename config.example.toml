@@ -1,0 +1,37 @@
+[gateway]
+host = "0.0.0.0"
+port = 8090
+# Your indexer's on-chain staking address — used as service_provider in TAP receipts.
+indexer_address = "0xb43B2CCCceadA5292732a8C58ae134AdEFcE09Bb"
+# Publicly reachable MCP endpoint URL for this indexer.
+endpoint_url = "https://compass.your-indexer.example.com"
+
+[tap]
+# MCPDataService contract address on Arbitrum One (deploy with contracts/script/Deploy.s.sol).
+data_service_address = "0x0000000000000000000000000000000000000000"
+eip712_domain_name = "GraphTallyCollector"
+eip712_chain_id = 42161  # Arbitrum One
+eip712_verifying_contract = "0x8f69F5C07477Ac46FBc491B1E6D91E2bb0111A9e"
+# Default price per MCP tool call in GRT wei (0.00001 GRT ≈ $0.000001 at $0.10/GRT).
+price_per_query_grt_wei = 10000000000000
+
+[graph_node]
+# When running in docker on the same VPS as the StakeSquid indexer stack,
+# use the graph-node container name (reachable via the shared docker network).
+# Verify the container name with: docker ps --format '{{.Names}}' | grep graph
+url = "http://graph-node:8000"
+timeout_secs = 30
+
+# Register subgraphs by deployment CID. Each becomes one MCP tool.
+[[subgraphs]]
+deployment_id = "QmXRFHuFzBMnSFotnbAZzRnELHoUXMHCWfuRxCxYD8Yz1"
+name = "graph_horizon_indexer_perf"
+description = "The Graph Horizon indexer performance tracking on Arbitrum One."
+network = "arbitrum-one"
+
+# [[subgraphs]]
+# deployment_id = "Qm..."
+# name = "ens_mainnet"
+# description = "ENS name resolution — resolve names, addresses, and text records."
+# network = "mainnet"
+# price_per_query_grt_wei = 5000000000000   # override default price for this subgraph

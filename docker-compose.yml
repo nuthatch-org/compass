@@ -1,0 +1,28 @@
+services:
+  compass-gateway:
+    image: compass-gateway:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: compass-gateway
+    restart: unless-stopped
+    ports:
+      - "8091:8090"   # 8091 on host (8082 = foghorn, 8090 free; use 8091 to avoid any clash)
+    volumes:
+      - ./compass.toml:/app/compass.toml:ro
+    environment:
+      RUST_LOG: "compass_gateway=info,tower_http=debug"
+      COMPASS_CONFIG: /app/compass.toml
+    networks:
+      - compass_net
+      # Join the same network as graph-node so we can reach it by container name.
+      - graph_node_net
+
+networks:
+  compass_net:
+    driver: bridge
+  # The graph-node network from the StakeSquid compose stack.
+  # Name may vary — check with: docker network ls | grep graph
+  graph_node_net:
+    external: true
+    name: graphprotocol-mainnet-docker_default

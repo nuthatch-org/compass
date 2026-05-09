@@ -1,0 +1,10 @@
+[package]
+name = "compass-schema"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "GraphQL schema introspection → MCP tool schema derivation for Compass"
+
+[dependencies]
+compass-core.workspace = true
+serde_json.workspace = true

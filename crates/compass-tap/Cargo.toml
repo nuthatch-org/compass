@@ -1,0 +1,16 @@
+[package]
+name = "compass-tap"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "TAP v2 (GraphTally) receipt types, EIP-712 hashing, and validation for Compass"
+
+[dependencies]
+alloy-primitives.workspace = true
+alloy-sol-types.workspace = true
+k256.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+hex.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
